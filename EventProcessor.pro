@@ -9,4 +9,6 @@ SOURCES += \
         main.cpp
 
 HEADERS += \
-    eventhub.h
+    SafeQueue.h \
+    eventhub.h \
+    threadpool.h
