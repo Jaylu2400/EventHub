@@ -1,14 +1,11 @@
 TEMPLATE = app
-CONFIG += console c++11
+CONFIG += console c++17
 CONFIG -= app_bundle
 CONFIG -= qt
-LIBS += -ldbus-1\
-            -lpthread
+LIBS +=  -lpthread
 SOURCES += \
         eventhub.cpp \
         main.cpp
 
 HEADERS += \
-    SafeQueue.h \
-    eventhub.h \
-    threadpool.h
+    eventhub.h

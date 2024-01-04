@@ -3,4 +3,7 @@
 *.user
 *.user.*
 Makefile
+Makefile*
 EventProcessor
+release/*
+debug/*

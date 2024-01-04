@@ -1,14 +1,17 @@
 #ifndef EVENTHUB_H
 #define EVENTHUB_H
-#include <dbus/dbus.h>
-#include <pthread.h>
+#include <stdio.h>
 #include <map>
 #include <list>
 #include <vector>
 #include <memory>
+#include <string.h>
 #include <queue>
-#include "threadpool.h"
+#include <unistd.h>
+#include <pthread.h>
+#include <mutex>
 
+//#include <windows.h>
 using namespace std;
 #define HZ_BOOL int
 #define HZ_TRUE 1
@@ -38,12 +41,16 @@ typedef struct hiSUBSCRIBER_S {
     HZ_BOOL bSync;
 } HI_SUBSCRIBER_S;
 
+
+
+
 class EventHub
 {
 public:
     EventHub();
     ~EventHub();
     //接口
+
     int EVTHUB_Init();
     int EVTHUB_Deinit();
     int HZ_EVTHUB_Register(HI_EVENT_ID EventID);
@@ -57,27 +64,13 @@ public:
     int HZ_EVTHUB_SetEnabled(HZ_BOOL bFlag);
     int HZ_EVTHUB_GetEnabled(HZ_BOOL *pFlag);
 
-protected:
-    //处理函数
-    static void *EventProcess(void * args);
-    static void *EventHistoryHandle(void* p);//订阅者线程处理消息
-
 private:
     pthread_mutex_t _mutexSubscriber;   // 消息订阅互斥锁
-    pthread_mutex_t _mutexPublish;   // 消息发布互斥锁
     pthread_mutex_t _mutexConn;   // Dbus连接互斥锁
-
-    pthread_t event_history_loop;
+    pthread_mutex_t _mutexPublish;   // 消息发布互斥锁
+    pthread_t main_loop;
     vector<HI_EVENT_ID> plist;   // 可发布的事件ID
-    list<HI_EVENT_S*> event_queue; //历史事件表
     map<HI_SUBSCRIBER_S*,pthread_t> sub_threads;//订阅者线程表
-    map<HI_SUBSCRIBER_S*,list<HI_EVENT_ID>> sub_event_list;
-    HI_EVENT_S event;//当前event
-
-    HZ_BOOL Enabled;
-    HZ_BOOL initFlag;
-    ThreadPool pool;
-
 };
 
 #endif // EVENTHUB_H

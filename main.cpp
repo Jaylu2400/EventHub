@@ -1,12 +1,10 @@
 #include <iostream>
-#include "eventhub.h"
 #include <unistd.h>
-#include <string.h>
-#include <pthread.h>
-#include <mutex>
+#include "eventhub.h"
+#include <malloc.h>
 using namespace std;
 static int proc_times1 = 0,proc_times2 = 0,proc_times3 = 0;
-pthread_mutex_t mutex1 ,mutex2,mutex3;
+pthread_mutex_t mutex1= PTHREAD_MUTEX_INITIALIZER ,mutex2= PTHREAD_MUTEX_INITIALIZER,mutex3= PTHREAD_MUTEX_INITIALIZER;
 
 static int SUB_1_TEST_EventProc(HI_EVENT_S* pstEvent,void* pvArg)
 {
@@ -23,7 +21,7 @@ static int SUB_1_TEST_EventProc(HI_EVENT_S* pstEvent,void* pvArg)
 
 static int SUB_2_TEST_EventProc(HI_EVENT_S* pstEvent,void* pvArg)
 {
-
+    //sleep(1);
     pthread_mutex_lock(&mutex2);
     proc_times2++;
     printf("sub2 will process event id: %d  , proc times: %d \n",pstEvent->EventID,proc_times2);
@@ -42,13 +40,11 @@ static int SUB_3_TEST_EventProc(HI_EVENT_S* pstEvent,void* pvArg)
     pthread_mutex_unlock(&mutex3);
     return 0;
 }
-
-static void *Test_Sub_Pub(void* arg)
+int main()
 {
-    EventHub *hub = (EventHub*) arg;
-    if(hub == NULL)
-        return NULL;
-
+    cout << "Hello World!" << endl;
+    EventHub *hub = new EventHub();
+    hub->EVTHUB_Init();
 
     HI_MW_PTR pvSubscriberID = NULL;
     HI_SUBSCRIBER_S stSubscriber = {"SUBCRIBER_1",
@@ -79,26 +75,13 @@ static void *Test_Sub_Pub(void* arg)
     hub->HZ_EVTHUB_Subscribe(pvSubscriberID3,1234);
     hub->HZ_EVTHUB_Subscribe(pvSubscriberID3,6789);
     hub->HZ_EVTHUB_Subscribe(pvSubscriberID3,12354863);
+    //hub.HZ_EVTHUB_UnSubscribe(pvSubscriberID3,12354863);
     printf("will SLEEP...\n");
-    sleep(5);
-
-
-
+    sleep(15);
     printf("will publish sth...\n");
     char* load = "Hello world";
-//    HI_EVENT_S event;
-//    event.EventID = 12354863;
-//    event.arg1 = 50;
-//    event.arg2 = 100;
-//    event.s32Result = 80;
-//    event.u64CreateTime = 99;
-//    memset(event.aszPayload,0,EVENT_PAYLOAD_LEN);
-//    strcpy(event.aszPayload,load);
-//    hub->HZ_EVTHUB_Register(event.EventID);
-//    hub->HZ_EVTHUB_Publish(&event);
-//    printf("push 1 times\n");
-    HI_EVENT_S event;
-
+    HI_EVENT_S event = {0};
+    event.EventID = 12354863;
     event.arg1 = 50;
     event.arg2 = 100;
     event.s32Result = 80;
@@ -106,46 +89,16 @@ static void *Test_Sub_Pub(void* arg)
     memset(event.aszPayload,0,EVENT_PAYLOAD_LEN);
     strcpy(event.aszPayload,load);
 
-
-
-    for(int i = 1; i <= 100 ; i++)
+    //hub.HZ_EVTHUB_Publish(&event);
+    hub->HZ_EVTHUB_Register(event.EventID);
+    for(int i=0 ; i< 10000;i++)
     {
-        event.EventID = 12354863 + i;
-        hub->HZ_EVTHUB_Register(event.EventID);
         hub->HZ_EVTHUB_Publish(&event);
-        printf("push %d times\n",i);
-        //usleep(1000*10);
     }
-
-
-    return NULL;
-}
-
-int main()
-{
-    cout << "Hello World!" << endl;
-    pthread_mutex_init(&mutex1, nullptr);
-    pthread_mutex_init(&mutex2, nullptr);
-    pthread_mutex_init(&mutex3, nullptr);
-    EventHub hub;
-    hub.EVTHUB_Init();
-
-    printf("inited.......\n");
-
-    pthread_t p_id;
-
-    pthread_create(&p_id,NULL,Test_Sub_Pub,(void*)&hub);
-//    pthread_create(&p2,NULL,Test_Sub_Pub2,(void*)&hub);
-//    pthread_create(&p3,NULL,Test_Sub_Pub3,(void*)&hub);
-
-    //Test_Sub_Pub(&hub);
-
-    //sleep(100);
-    //printf("will deinit\n");
-    pthread_join(p_id,NULL);
-    sleep(10);
-    printf("p1: %d  , p2: %d   p3:%d\n",proc_times1,proc_times2,proc_times3);
-    //hub.EVTHUB_Deinit();
+    //printf("push 1 times\n");
+    sleep(50);
+    hub->EVTHUB_Deinit();
+    delete hub;
     while (1) {
         sleep(1);
     }
