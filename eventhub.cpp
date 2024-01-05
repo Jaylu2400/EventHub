@@ -1,5 +1,5 @@
 #include "eventhub.h"
-
+#include <malloc.h>
 HZ_BOOL Enabled = HZ_TRUE;
 HZ_BOOL initFlag = HZ_FALSE;
 
@@ -35,15 +35,18 @@ void * handle_message(/*HI_SUBSCRIBER_S* sub,HI_EVENT_S *e*/void* arg)
                 }
             }
             pthread_mutex_lock(&_mutexQueue);
+//            if(e != NULL)
+//            {
+//                free(e);
+//                e =NULL;
+//            }
             sub_pre_events[sub].pop();
-
             pthread_mutex_unlock(&_mutexQueue);
-            pthread_testcancel();
         }else{
-            usleep(1000*10);
-            pthread_testcancel();
+            usleep(1000*1000);
+            malloc_trim(0);//空闲时回收内存碎片
         }
-        pthread_testcancel();
+
     }
     return NULL;
 }
@@ -89,7 +92,8 @@ int EventHub::EVTHUB_Deinit()
 
     while (!event_queue.empty())//清空历史事件
     {
-        event_queue.pop_back();
+        free(event_queue.front());
+        event_queue.pop_front();
     }
 
     plist.erase(plist.begin(),plist.end());
@@ -97,22 +101,9 @@ int EventHub::EVTHUB_Deinit()
     //结束所有订阅者线程,释放所有订阅者指针
     for(map<HI_SUBSCRIBER_S*,pthread_t>::iterator it = sub_threads.begin() ;it != sub_threads.end();)
     {
-        pthread_t tmp = it->second;
-        printf("will free sub: %lld\n",tmp);
-        int ret = pthread_cancel(it->second);
-        if(ret != 0)
-        {
-            printf("cancel err:%d\n",ret);
-        }
-        ret = pthread_join(it->second,NULL);
-        if(ret != 0)
-        {
-            printf("join err:%d\n",ret);
-        }
+        printf("will free sub : %lu\n",it->second);
         pthread_cancel(it->second);
         pthread_join(it->second,NULL);
-
-
         HI_SUBSCRIBER_S * s = NULL;
         s = it->first;
         if(s != NULL)
@@ -126,14 +117,19 @@ int EventHub::EVTHUB_Deinit()
 
     }
 
-    //map<HI_SUBSCRIBER_S*,pthread_t>::iterator it = sub_threads.begin() ;
+    map<HI_SUBSCRIBER_S*,queue<HI_EVENT_S*>>::iterator it = sub_pre_events.begin() ;
 
-    sub_threads.erase(sub_threads.begin(),sub_threads.end());
+    //sub_threads.erase(sub_threads.begin(),sub_threads.end());
 
-    sub_pre_events.erase(sub_pre_events.begin(),sub_pre_events.end());
+    for (it; it != sub_pre_events.end(); ) {
+        while (it->second.size() > 0) {
+            it->second.pop();
+        }
+        sub_pre_events.erase( it++);
+    }
 
     printf("will deinit: %d  %d  %d\n",sub_threads.size(),sub_pre_events.size(),event_queue.size());
-
+    malloc_trim(0);
     pthread_mutex_unlock(&_mutexConn);
     printf("has deinited\n");
     return 0;
@@ -226,7 +222,7 @@ int EventHub::HZ_EVTHUB_CreateSubscriber(HI_SUBSCRIBER_S *pstSubscriber, HI_MW_P
         printf("create sub thread failed\n");
         return -300;
     }
-    printf("sub thread pid: %lld\n",sub_t);
+
     sub_threads.insert(pair<HI_SUBSCRIBER_S*,pthread_t>(sub_c,sub_t));
 
 
@@ -360,11 +356,7 @@ int EventHub::HZ_EVTHUB_Publish(HI_EVENT_S *pEvent)
 
                 return 0;
             }else{
-                if(event_queue.front() != NULL)
-                {
-                    free(event_queue.front());
-
-                }
+                free(event_queue.front());
                 event_queue.pop_front();//will destroy ref,no need to free again
                 //free(th->event_queue.front());
                 event_queue.push_back(h_event);

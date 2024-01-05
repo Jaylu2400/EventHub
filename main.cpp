@@ -40,12 +40,12 @@ static int SUB_3_TEST_EventProc(HI_EVENT_S* pstEvent,void* pvArg)
     pthread_mutex_unlock(&mutex3);
     return 0;
 }
-int main()
-{
-    cout << "Hello World!" << endl;
-    EventHub *hub = new EventHub();
-    hub->EVTHUB_Init();
 
+static void *Test_Sub_Pub(void* arg)
+{
+    EventHub *hub = (EventHub*) arg;
+    if(hub == NULL)
+        return NULL;
     HI_MW_PTR pvSubscriberID = NULL;
     HI_SUBSCRIBER_S stSubscriber = {"SUBCRIBER_1",
                                         SUB_1_TEST_EventProc,
@@ -77,7 +77,7 @@ int main()
     hub->HZ_EVTHUB_Subscribe(pvSubscriberID3,12354863);
     //hub.HZ_EVTHUB_UnSubscribe(pvSubscriberID3,12354863);
     printf("will SLEEP...\n");
-    sleep(15);
+    sleep(5);
     printf("will publish sth...\n");
     char* load = "Hello world";
     HI_EVENT_S event = {0};
@@ -91,14 +91,26 @@ int main()
 
     //hub.HZ_EVTHUB_Publish(&event);
     hub->HZ_EVTHUB_Register(event.EventID);
-    for(int i=0 ; i< 10000;i++)
+    for(int i=0 ; i< 10000000;i++)
     {
+
         hub->HZ_EVTHUB_Publish(&event);
     }
     //printf("push 1 times\n");
-    sleep(50);
-    hub->EVTHUB_Deinit();
-    delete hub;
+    /*sleep(10);
+    hub.EVTHUB_Deinit();
+    malloc_trim(0)*/;
+    return NULL;
+}
+int main()
+{
+    cout << "Hello World!" << endl;
+    EventHub hub;
+    hub.EVTHUB_Init();
+    Test_Sub_Pub(&hub);
+    //sleep(40);
+    //hub.EVTHUB_Deinit();
+    //malloc_trim(0);
     while (1) {
         sleep(1);
     }
