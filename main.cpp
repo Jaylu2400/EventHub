@@ -91,7 +91,7 @@ static void *Test_Sub_Pub(void* arg)
 
     //hub.HZ_EVTHUB_Publish(&event);
     hub->HZ_EVTHUB_Register(event.EventID);
-    for(int i=0 ; i< 10000000;i++)
+    for(int i=0 ; i< 100000;i++)
     {
 
         hub->HZ_EVTHUB_Publish(&event);

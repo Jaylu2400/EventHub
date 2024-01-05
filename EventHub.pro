@@ -9,3 +9,12 @@ SOURCES += \
 
 HEADERS += \
     eventhub.h
+
+    win32 {
+        DEFINES  += OS_WIN
+        LIBS += -lodbc32
+    }
+    unix {
+        DEFINES += OS_UNIX
+        LIBS += -lodbc
+    }

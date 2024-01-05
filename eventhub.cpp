@@ -44,7 +44,9 @@ void * handle_message(/*HI_SUBSCRIBER_S* sub,HI_EVENT_S *e*/void* arg)
             pthread_mutex_unlock(&_mutexQueue);
         }else{
             usleep(1000*1000);
+#ifdef   OS_UNIX
             malloc_trim(0);//空闲时回收内存碎片
+#endif
         }
 
     }
@@ -129,7 +131,9 @@ int EventHub::EVTHUB_Deinit()
     }
 
     printf("will deinit: %d  %d  %d\n",sub_threads.size(),sub_pre_events.size(),event_queue.size());
-    malloc_trim(0);
+#ifdef OS_UNIX
+    //malloc_trim(0);
+#endif
     pthread_mutex_unlock(&_mutexConn);
     printf("has deinited\n");
     return 0;
